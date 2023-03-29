@@ -53,7 +53,11 @@ kotlin {
                 implementation(kotlin("test-annotations-common"))
             }
         }
-        val jvmMain by getting
+        val jvmMain by getting {
+            dependencies {
+                implementation(libs.kotlinx.coroutines.core)
+            }
+        }
         val jvmTest by getting {
             dependencies {
                 implementation(libs.kotest.runner.junit5)

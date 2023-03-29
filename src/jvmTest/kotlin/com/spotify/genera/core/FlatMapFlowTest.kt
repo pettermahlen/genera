@@ -12,17 +12,13 @@ import kotlinx.coroutines.flow.consumeAsFlow
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
 
-
 @OptIn(ExperimentalCoroutinesApi::class)
 class FlatMapFlowTest : ShouldSpec({
     val channels = mutableMapOf<String, Channel<Int>>()
     val received = mutableSetOf<Int>()
 
     lateinit var testScope: TestScope
-
     lateinit var flatMapFlow: FlatMapFlow<String, Int>
-
-
     lateinit var connection: Connection<String>
 
     beforeEach {
@@ -30,7 +26,7 @@ class FlatMapFlowTest : ShouldSpec({
         received.clear()
         testScope = TestScope()
 
-        flatMapFlow = FlatMapFlow<String, Int>(testScope) { input ->
+        flatMapFlow = FlatMapFlow(testScope) { input ->
             val channel = Channel<Int>(100)
 
             channels[input] = channel
@@ -113,8 +109,4 @@ class FlatMapFlowTest : ShouldSpec({
             received.shouldContainExactly(129)
         }
     }
-
-    // TODO: concurrency/semantics tests, such as
-    // - channel is closed
-    // - multiple consumes: all data should be received; should use different channels in this test for that.
 })

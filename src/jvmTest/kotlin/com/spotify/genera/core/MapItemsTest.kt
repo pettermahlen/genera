@@ -4,13 +4,13 @@ import io.kotest.core.spec.style.ShouldSpec
 import io.kotest.matchers.collections.shouldContainExactly
 
 
-class MapTest : ShouldSpec({
-    val map = Map<String, Int> { s -> s.length }
+class MapItemsTest : ShouldSpec({
+    val mapItems = MapItems<String, Int> { s -> s.length }
 
     should("apply mapper to inputs") {
         val results = mutableListOf<Int>()
 
-        val connection = map.connect { results.add(it) }
+        val connection = mapItems.connect { results.add(it) }
 
         connection.consume("hi there")
 
