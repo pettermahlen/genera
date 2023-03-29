@@ -66,13 +66,10 @@ public class MobiusLoop<Model, Event, Effect>(
         val effectHandlerConnectable = FlatMapFlow<Effect, Event>(scope) { effectHandler.invoke(it) }
         val separateModels = MapItems<Next<Model, Effect>, Model> { next -> next.model }
         modelObservable = ObservableItems()
-        val joinEvents = Join<Event>()
         lifecycleManager = LifecycleManager(scope)
 
-        val joinConnection = joinEvents.connect(lifecycleManager)
-
-        val effectsConnection = separateEffects.connect(effectHandlerConnectable.connect(joinConnection))
-        val modelsConnection = separateModels.connect(modelObservable.connect(eventSource.connect(joinConnection)))
+        val effectsConnection = separateEffects.connect(effectHandlerConnectable.connect(lifecycleManager))
+        val modelsConnection = separateModels.connect(modelObservable.connect(eventSource.connect(lifecycleManager)))
 
         val splitNextsConnection = splitNexts.connect(effectsConnection)
         splitNextsConnection.connect(modelsConnection)
@@ -80,15 +77,14 @@ public class MobiusLoop<Model, Event, Effect>(
         eventRunner.connect(stateHolder.connect(splitNextsConnection))
     }
 
-    // observe + dispatchEvent is really a Connectable, too.
-
+    // observe + dispatchEvent is really a Connectable, too. So maybe, ideally, this shouldn't be here? It's the Mobius API, so I guess it should.
     public fun dispatchEvent(event: Event): Unit = lifecycleManager.consume(event)
+
+    public fun observe(observer: Consumer<Model>): Disposable = modelObservable.observe(observer)
 
     override fun dispose() {
         TODO("Not yet implemented")
     }
-
-    public fun observe(observer: Consumer<Model>): Disposable = modelObservable.observe(observer)
 
     private fun wrap(update: (Model, Event) -> Next<Model, Effect>): (Next<Model, Effect>, Event) -> Next<Model, Effect> =
         { next, event -> update(next.model, event) }

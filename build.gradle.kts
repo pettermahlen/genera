@@ -1,3 +1,15 @@
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+
+    dependencies {
+        classpath("org.jetbrains.kotlinx:atomicfu-gradle-plugin:0.20.1")
+    }
+}
+
+apply(plugin = "kotlinx-atomicfu")
+
 plugins {
     kotlin("multiplatform") version "1.7.21"
 }

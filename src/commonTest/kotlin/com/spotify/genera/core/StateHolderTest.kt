@@ -3,6 +3,7 @@ package com.spotify.genera.core
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.ShouldSpec
 import io.kotest.matchers.collections.shouldContainExactly
+import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
 
 class StateHolderTest : ShouldSpec({
@@ -18,7 +19,7 @@ class StateHolderTest : ShouldSpec({
 
         connection.consume("a string")
 
-        models.shouldContainExactly(listOf("a string"))
+        models shouldBe listOf(listOf("a string"))
     }
 
     should("throw after disposed") {
