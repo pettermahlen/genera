@@ -52,7 +52,7 @@ kotlin {
         val commonMain by getting {
             explicitApi = org.jetbrains.kotlin.gradle.dsl.ExplicitApiMode.Strict
             dependencies {
-                implementation(libs.kotlinx.coroutines.core)
+                api(libs.kotlinx.coroutines.core)
             }
         }
         val commonTest by getting {
@@ -66,13 +66,11 @@ kotlin {
             }
         }
         val jvmMain by getting {
-            dependencies {
-                implementation(libs.kotlinx.coroutines.core)
-            }
         }
         val jvmTest by getting {
             dependencies {
                 implementation(libs.kotest.runner.junit5)
+                implementation(libs.org.awaitility.awaitility.kotlin)
             }
         }
         val jsMain by getting

@@ -9,4 +9,4 @@ TODO:
 
 - consider using just Flows or Channels, not Connectable. Basically all-in on coroutines
 - add iOS code/Swift wrapper (get help!)
-- 
+- consider more specific types: thread-safe, one-to-one (one item in == one item out)

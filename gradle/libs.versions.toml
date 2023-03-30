@@ -2,6 +2,7 @@
 kotlin = "1.7.21"
 coroutines = "1.6.4"
 kotest = "5.5.5"
+awaitility = "4.2.0"
 
 [libraries]
 kotest-assertions-core = { module = "io.kotest:kotest-assertions-core", version.ref = "kotest" }
@@ -10,6 +11,9 @@ kotest-framework-datatest = { module = "io.kotest:kotest-framework-datatest", ve
 kotest-runner-junit5 = { module = "io.kotest:kotest-runner-junit5", version.ref = "kotest" }
 
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
+
+org-awaitility-awaitility = { module = "org.awaitility:awaitility", version.ref = "awaitility"}
+org-awaitility-awaitility-kotlin = { module = "org.awaitility:awaitility-kotlin", version.ref = "awaitility"}
 
 [plugins]
 kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }

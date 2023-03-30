@@ -52,7 +52,7 @@ public class MobiusLoop<Model, Event, Effect>(
         // this should be passed in to support single-threaded execution?
         val scope = CoroutineScope(Dispatchers.Default)
 
-        val eventRunner = SwitchToContext<Event> { count -> newSingleThreadRunner("Event Runner ($loopName:$count)") }
+        val eventRunner = SwitchToContext<Event>(scope) { count -> newSingleThreadRunner("Event Runner ($loopName:$count)") }
         // maybe as an alternative to the above ^, one could wrap a Connectable in an Actor. For that use case, it would
         // be nice to have some sort of 'one-to-one connectable', where each piece of input corresponds exactly to one piece of output. like a single, sorta.
         // alternatively/additionally, some type that defines a stateful connectable.
