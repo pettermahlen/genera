@@ -9,4 +9,6 @@ TODO:
 
 - consider using just Flows or Channels, not Connectable. Basically all-in on coroutines
 - add iOS code/Swift wrapper (get help!)
-- consider more specific types: thread-safe, one-to-one (one item in == one item out)
+- consider more specific types: thread-safe, one-to-one (one item in == one item out), stateful
+- consider some other way than switching to a different Dispatcher to manage thread-safety. Maybe reducing
+  parallelism is enough; assuming that visibility issues are handled by coroutines. I think they should be.

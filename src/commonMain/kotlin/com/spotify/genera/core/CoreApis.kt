@@ -4,7 +4,7 @@ public fun interface Consumer<T> {
     public fun consume(data: T): Unit
 }
 
-public interface Disposable {
+public fun interface Disposable {
     public fun dispose(): Unit
 }
 

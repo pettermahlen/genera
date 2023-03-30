@@ -9,6 +9,7 @@ import com.spotify.genera.core.FlatMapFlow
 import com.spotify.genera.core.Join
 import com.spotify.genera.core.LifecycleManager
 import com.spotify.genera.core.MapItems
+import com.spotify.genera.core.ObservableConnection
 import com.spotify.genera.core.ObservableItems
 import com.spotify.genera.core.Split
 import com.spotify.genera.core.StateHolder
@@ -33,7 +34,7 @@ public class MobiusLoop<Model, Event, Effect>(
     public var mostRecentModel: Model? = null
 
     private lateinit var lifecycleManager: LifecycleManager<Event>
-    private lateinit var modelObservable: ObservableItems<Model>
+    private lateinit var modelObservable: ObservableConnection<Model>
 
     @OptIn(ExperimentalCoroutinesApi::class)
     private fun connect() {
@@ -53,10 +54,8 @@ public class MobiusLoop<Model, Event, Effect>(
         val scope = CoroutineScope(Dispatchers.Default)
 
         val eventRunner = SwitchToContext<Event>(scope) { count -> newSingleThreadRunner("Event Runner ($loopName:$count)") }
-        // maybe as an alternative to the above ^, one could wrap a Connectable in an Actor. For that use case, it would
-        // be nice to have some sort of 'one-to-one connectable', where each piece of input corresponds exactly to one piece of output. like a single, sorta.
-        // alternatively/additionally, some type that defines a stateful connectable.
-        // the StateHolder could use an Actor internally and provide guarantees. But that would be less flexible for the single-threaded use case
+        // maybe as an alternative to the above ^, one could wrap a Connectable in something that reduces parallelism. For that use case, it would
+        // the StateHolder should not provide guarantees internally as that would be less flexible for the single-threaded use case
 
         // TODO: support lifecycle events like init, (etc.?), here. That would enable kicking off initial effects. It would be easy to do by wrapping the Event type inside a sealed class.
         val stateHolder: StateHolder<Event, Next<Model, Effect>> =
@@ -65,11 +64,12 @@ public class MobiusLoop<Model, Event, Effect>(
         val separateEffects = FlatMapFlow<Next<Model, Effect>, Effect>(scope) { it.effects.asFlow() }
         val effectHandlerConnectable = FlatMapFlow<Effect, Event>(scope) { effectHandler.invoke(it) }
         val separateModels = MapItems<Next<Model, Effect>, Model> { next -> next.model }
-        modelObservable = ObservableItems()
+        val observableItems = ObservableItems<Model>()
         lifecycleManager = LifecycleManager(scope)
 
         val effectsConnection = separateEffects.connect(effectHandlerConnectable.connect(lifecycleManager))
-        val modelsConnection = separateModels.connect(modelObservable.connect(eventSource.connect(lifecycleManager)))
+        modelObservable = observableItems.connect(eventSource.connect(lifecycleManager))
+        val modelsConnection = separateModels.connect(modelObservable)
 
         val splitNextsConnection = splitNexts.connect(effectsConnection)
         splitNextsConnection.connect(modelsConnection)
