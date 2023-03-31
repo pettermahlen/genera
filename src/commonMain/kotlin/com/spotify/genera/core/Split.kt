@@ -3,6 +3,7 @@ package com.spotify.genera.core
 import kotlinx.atomicfu.atomic
 import kotlinx.atomicfu.update
 
+// TODO: maybe call this Fanout? Split is probably fine.
 public class Split<Data> : Connectable<Data, Data> {
     public override fun connect(output: Consumer<Data>): SplitConnection<Data> = SplitConnection(output)
 }
@@ -18,7 +19,7 @@ public class SplitConnection<Data>(
     }
 
     private val state = atomic(State.INITIALISING)
-    private val mergedConsumer = MergedConsumer(consumer)
+    private val splittingConsumer = SplittingConsumer(consumer)
 
     override fun consume(data: Data) {
         state.update { state ->
@@ -27,7 +28,7 @@ public class SplitConnection<Data>(
             State.ACTIVE
         }
 
-        mergedConsumer.consume(data)
+        splittingConsumer.consume(data)
     }
 
     override fun dispose() {
@@ -35,31 +36,22 @@ public class SplitConnection<Data>(
     }
 
     override fun connect(output: Consumer<Data>): Connection<Data> {
-        // using the atomic to guard access to the mutable MergedConsumer. That's
-        // actually a theoretical risk, because two threads might be racily trying to connect
-        // two different consumers, and only one might be added because of lost updates. I
-        // think it should just be noted that this method isn't thread safe. At least, it'll be correct
-        // with regard to racy consume/connect, and it's quite pathological to race connects against each other.
-        state.update { state ->
-            check(state == State.INITIALISING)
+        check(state.value == State.INITIALISING)
 
-            mergedConsumer.addConsumer(output)
-
-            state
-        }
+        splittingConsumer.addConsumer(output)
 
         return this
     }
 }
 
-private class MergedConsumer<Data>(consumer: Consumer<Data>) : Consumer<Data> {
-    private val consumers = mutableListOf(consumer)
+private class SplittingConsumer<Data>(consumer: Consumer<Data>) : Consumer<Data> {
+    private val consumers = atomic(listOf(consumer))
 
     fun addConsumer(consumer: Consumer<Data>) {
-        consumers.add(consumer)
+        consumers.update { current -> current.plus(consumer) }
     }
 
     override fun consume(data: Data) {
-        consumers.forEach { it.consume(data) }
+        consumers.value.forEach { it.consume(data) }
     }
 }
