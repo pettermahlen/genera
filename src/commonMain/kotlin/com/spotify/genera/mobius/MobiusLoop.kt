@@ -6,7 +6,6 @@ import com.spotify.genera.core.Connectable
 import com.spotify.genera.core.Consumer
 import com.spotify.genera.core.Disposable
 import com.spotify.genera.core.FlatMapFlow
-import com.spotify.genera.core.Join
 import com.spotify.genera.core.LifecycleManager
 import com.spotify.genera.core.MapItems
 import com.spotify.genera.core.ObservableConnection
@@ -53,7 +52,8 @@ public class MobiusLoop<Model, Event, Effect>(
         // this should be passed in to support single-threaded execution?
         val scope = CoroutineScope(Dispatchers.Default)
 
-        val eventRunner = SwitchToContext<Event>(scope) { count -> newSingleThreadRunner("Event Runner ($loopName:$count)") }
+        val eventRunner =
+            SwitchToContext<Event>(scope) { count -> newSingleThreadRunner("Event Runner ($loopName:$count)") }
         // maybe as an alternative to the above ^, one could wrap a Connectable in something that reduces parallelism. For that use case, it would
         // the StateHolder should not provide guarantees internally as that would be less flexible for the single-threaded use case
 
@@ -65,16 +65,22 @@ public class MobiusLoop<Model, Event, Effect>(
         val effectHandlerConnectable = FlatMapFlow<Effect, Event>(scope) { effectHandler.invoke(it) }
         val separateModels = MapItems<Next<Model, Effect>, Model> { next -> next.model }
         val observableItems = ObservableItems<Model>()
-        lifecycleManager = LifecycleManager(scope)
 
-        val effectsConnection = separateEffects.connect(effectHandlerConnectable.connect(lifecycleManager))
-        modelObservable = observableItems.connect(eventSource.connect(lifecycleManager))
-        val modelsConnection = separateModels.connect(modelObservable)
 
-        val splitNextsConnection = splitNexts.connect(effectsConnection)
-        splitNextsConnection.connect(modelsConnection)
+        // the loop factory method could be syntactically nicer somehow, making the shape of the loop more obvious.
+        lifecycleManager = LifecycleManager(scope) { eventConsumer ->
+            val effectsConnection = separateEffects.connect(effectHandlerConnectable.connect(eventConsumer))
+            modelObservable = observableItems.connect(eventSource.connect(eventConsumer))
+            val modelsConnection = separateModels.connect(modelObservable)
 
-        eventRunner.connect(stateHolder.connect(splitNextsConnection))
+            val splitNextsConnection = splitNexts
+                .connect(effectsConnection)
+                .connect(modelsConnection)
+
+            eventRunner.connect(stateHolder.connect(splitNextsConnection))
+        }
+
+        lifecycleManager.start()
     }
 
     // observe + dispatchEvent is really a Connectable, too. So maybe, ideally, this shouldn't be here? It's the Mobius API, so I guess it should.

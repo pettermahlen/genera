@@ -35,7 +35,11 @@ public class SplitConnection<Data>(
     }
 
     override fun connect(output: Consumer<Data>): Connection<Data> {
-        // using the atomic to guard access to the mutable MergedConsumer.
+        // using the atomic to guard access to the mutable MergedConsumer. That's
+        // actually a theoretical risk, because two threads might be racily trying to connect
+        // two different consumers, and only one might be added because of lost updates. I
+        // think it should just be noted that this method isn't thread safe. At least, it'll be correct
+        // with regard to racy consume/connect, and it's quite pathological to race connects against each other.
         state.update { state ->
             check(state == State.INITIALISING)
 
