@@ -24,19 +24,18 @@ public expect fun newSingleThreadRunner(name: String): CloseableCoroutineDispatc
 
 public class MobiusLoop<Model, Event, Effect>(
     private val loopName: String,
-    private val update: (Model, Event) -> Next<Model, Effect>,
+    update: (Model, Event) -> Next<Model, Effect>,
     private val effectHandler: (Effect) -> Flow<Event>,
     private val eventSource: Connectable<Model, Event>,
-    private val startFrom: Model,
+    startFrom: Model,
     // TODO: effect runner, event runner, logger, something like init/initial effects
 ) : Disposable {
     public var mostRecentModel: Model? = null
 
-    private lateinit var lifecycleManager: LifecycleManager<Event>
+    private val lifecycleManager: LifecycleManager<Event>
     private lateinit var modelObservable: ObservableConnection<Model>
 
-    @OptIn(ExperimentalCoroutinesApi::class)
-    private fun connect() {
+    init {
         // wire up loop:
         // - event Runner: ensure safe and atomic state mutation
         // - split: models to one loop, effects to another
@@ -49,7 +48,8 @@ public class MobiusLoop<Model, Event, Effect>(
         //    - ui (included in event source)
         // - life cycle handler
 
-        // this should be passed in to support single-threaded execution?
+        // this should be passed in to support single-threaded execution? Or, single-threaded execution should be wired up
+        // differently? The idea would be to make the loop fully synchronous in that scenario, so it would be maybe better to specialise that.
         val scope = CoroutineScope(Dispatchers.Default)
 
         val eventRunner =
@@ -79,8 +79,11 @@ public class MobiusLoop<Model, Event, Effect>(
 
             eventRunner.connect(stateHolder.connect(splitNextsConnection))
         }
-
         lifecycleManager.start()
+
+        // TODO: is this really right? and is it needed?
+        modelObservable.observe { mostRecentModel = it }
+
     }
 
     // observe + dispatchEvent is really a Connectable, too. So maybe, ideally, this shouldn't be here? It's the Mobius API, so I guess it should.
@@ -88,9 +91,7 @@ public class MobiusLoop<Model, Event, Effect>(
 
     public fun observe(observer: Consumer<Model>): Disposable = modelObservable.observe(observer)
 
-    override fun dispose() {
-        TODO("Not yet implemented")
-    }
+    override fun dispose(): Unit = lifecycleManager.dispose()
 
     private fun wrap(update: (Model, Event) -> Next<Model, Effect>): (Next<Model, Effect>, Event) -> Next<Model, Effect> =
         { next, event -> update(next.model, event) }
