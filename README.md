@@ -16,3 +16,5 @@ TODO:
   parallelism is enough; assuming that visibility issues are handled by coroutines. I think they should be.
 - consider using https://github.com/Kotlin/kotlinx-lincheck to validate thread-safety
 - consider using kotest's property based testing framework
+- consider testing structured concurrency adherence, with something like https://kt.academy/article/cc-testing.
+- 
